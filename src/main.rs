@@ -17,12 +17,12 @@ async fn start_handler(api: &Api, command: Command) -> Result<(), ExecuteError> 
 
     let stores = vec![
         Store{
-            name: "Metro",
-            url: "https://stores-api.zakaz.ua/stores/48215632/delivery_schedule/plan/?coords=49.971629,36.1759104"
+            name: "Metro".to_string(),
+            url: "https://stores-api.zakaz.ua/stores/48215632/delivery_schedule/plan/?coords=49.971629,36.1759104".to_string()
         }, 
         Store{
-            name: "Tavria",
-            url: "https://stores-api.zakaz.ua/stores/48221130/delivery_schedule/plan/?coords=49.971629,36.1759104"
+            name: "Tavria".to_string(),
+            url: "https://stores-api.zakaz.ua/stores/48221130/delivery_schedule/plan/?coords=49.971629,36.1759104".to_string()
         }
     ];
 
@@ -47,7 +47,7 @@ async fn main() {
     env_logger::init();
 
     let token = env::var("TOKEN").expect("TOKEN is not set");
-    let mut config = Config::new(token);
+    let config = Config::new(token);
     let api = Api::new(config).expect("Failed to create API");
     let mut dispatcher = Dispatcher::new(api.clone());
     dispatcher.add_handler(start_handler);

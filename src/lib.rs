@@ -1,21 +1,21 @@
 use serde_derive::Deserialize;
 
-#[derive(Copy, Clone)]
-pub struct Store<'a> {
-    pub name: &'a str,
-    pub url: &'a str,
+#[derive(Clone)]
+pub struct Store {
+    pub name: String,
+    pub url: String,
 }
 
-impl <'a>Store<'_> {
+impl Store{
     async fn fetch_data(&self) -> Result<Vec<DayInfo>, reqwest::Error> {
-        let resp = reqwest::get(self.url).await?;
-        print!("{}: {}\n", self.name, resp.status());
+        let resp = reqwest::get(self.url.as_str()).await?;
+        print!("{}: {}\n", self.name.as_str(), resp.status());
     
         let data = resp.json::<Vec<DayInfo>>().await;
         return data
     }
         
-    fn process_data(self, data: Vec<DayInfo>) -> Vec<OpenPosition> {
+    fn process_data(&self, data: Vec<DayInfo>) -> Vec<OpenPosition> {
         let mut results = Vec::new();
         for day_info in data {
             for hour_info in day_info.items {
@@ -31,7 +31,7 @@ impl <'a>Store<'_> {
         results
     }
     
-    pub async fn find_open_positions(self) -> Vec<OpenPosition> {
+    pub async fn find_open_positions(&self) -> Vec<OpenPosition> {
         let data = self.fetch_data().await;
         return self.process_data(data.unwrap());
     }
