@@ -7,35 +7,40 @@ pub struct Store<'a> {
 }
 
 impl <'a>Store<'_> {
-    fn fetch_data(&self) -> Result<Vec<DayInfo>, reqwest::Error> {
-        let resp = reqwest::blocking::get(self.url)?;
+    async fn fetch_data(&self) -> Result<Vec<DayInfo>, reqwest::Error> {
+        let resp = reqwest::get(self.url).await?;
         print!("{}: {}\n", self.name, resp.status());
     
-        let data = resp.json::<Vec<DayInfo>>();
+        let data = resp.json::<Vec<DayInfo>>().await;
         return data
     }
         
-    fn process_data(self, data: Vec<DayInfo>) {
-        let mut no_position = true;
+    fn process_data(self, data: Vec<DayInfo>) -> Vec<OpenPosition> {
+        let mut results = Vec::new();
         for day_info in data {
             for hour_info in day_info.items {
                 if hour_info.is_open {
-                    if no_position {
-                        no_position = false
-                    }
-                    print!("Open position: {} {}\n", hour_info.time_range, hour_info.date);
+                    let open_position = OpenPosition{
+                        time_range: hour_info.time_range, 
+                        date: hour_info.date
+                    };
+                    results.push(open_position);
                 }
             }
         }
-        if no_position {
-            print!("No open positions\n\n");
-        }
+        results
     }
     
-    pub fn find_open_positions(self) {
-        let data = self.fetch_data();
-        self.process_data(data.unwrap());
+    pub async fn find_open_positions(self) -> Vec<OpenPosition> {
+        let data = self.fetch_data().await;
+        return self.process_data(data.unwrap());
     }
+}
+
+#[derive(Debug)]
+pub struct OpenPosition {
+    time_range: String,
+    date: String
 }
 
 #[derive(Deserialize, Debug)]

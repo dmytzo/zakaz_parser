@@ -1,11 +1,20 @@
-extern crate chrono;
-
 use zakaz::Store;
 
-use std::{thread, time};
-use chrono::Local;
+use std::{thread, time, env, convert::Infallible};
 
-fn main() {
+use carapax::{
+    handler, Api, Config, Dispatcher, ExecuteError,
+    longpoll::LongPoll, 
+    methods::SendMessage,
+    webhook::run_server,
+    types::{Command, Message},
+};
+use dotenv::dotenv;
+
+#[handler(command = "/start")]
+async fn start_handler(api: &Api, command: Command) -> Result<(), ExecuteError> {
+    let chat_id = command.get_message().get_chat_id();
+
     let stores = vec![
         Store{
             name: "Metro",
@@ -17,14 +26,30 @@ fn main() {
         }
     ];
 
-    let timer = time::Duration::from_secs(30);
-
+    let timer = time::Duration::from_secs(60);
     loop {
-        println!("{}\n", Local::now().format("%Y-%m-%d %H:%M:%S"));
         for store in &stores {
-            store.find_open_positions();
+            let results = store.find_open_positions().await;
+            if results.len() > 0 {
+                let method = SendMessage::new(chat_id, format!("{}: {:?}", store.name, results));
+                api.execute(method).await?;
+            }
+            println!("{:?}", results);
         }
         thread::sleep(timer);
     }
-    
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+    env_logger::init();
+
+    let token = env::var("TOKEN").expect("TOKEN is not set");
+    let mut config = Config::new(token);
+    let api = Api::new(config).expect("Failed to create API");
+    let mut dispatcher = Dispatcher::new(api.clone());
+    dispatcher.add_handler(start_handler);
+    LongPoll::new(api, dispatcher).run().await
 }
